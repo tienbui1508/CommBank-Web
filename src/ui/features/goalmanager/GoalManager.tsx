@@ -1,5 +1,5 @@
 import { faCalendarAlt } from '@fortawesome/free-regular-svg-icons'
-import { faDollarSign, IconDefinition } from '@fortawesome/free-solid-svg-icons'
+import { faDollarSign, faSmile, IconDefinition } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { MaterialUiPickersDate } from '@material-ui/pickers/typings/date'
 import 'date-fns'
@@ -11,10 +11,17 @@ import { selectGoalsMap, updateGoal as updateGoalRedux } from '../../../store/go
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import DatePicker from '../../components/DatePicker'
 import { Theme } from '../../components/Theme'
+import { BaseEmoji } from 'emoji-mart'
+import GoalIcon from './GoalIcon'
+import { TransparentButton } from '../../components/TransparentButton'
 
 type Props = { goal: Goal }
+
 export function GoalManager(props: Props) {
+  
   const dispatch = useAppDispatch()
+
+  const hasIcon = () => icon != null
 
   const goal = useAppSelector(selectGoalsMap)[props.goal.id]
 
@@ -74,6 +81,38 @@ export function GoalManager(props: Props) {
       updateGoalApi(props.goal.id, updatedGoal)
     }
   }
+  const [icon, setIcon] = useState<string | null>(null)
+
+  useEffect(() => {
+    setIcon(props.goal.icon)
+  }, [props.goal.id, props.goal.icon])
+
+
+  const addIconOnClick = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    setEmojiPickerIsOpen(true)
+  }
+
+  
+  const [emojiPickerIsOpen, setEmojiPickerIsOpen] = useState(false)
+
+
+  const pickEmojiOnClick = (emoji: BaseEmoji, event: MouseEvent) => {
+    event.stopPropagation()
+
+    setIcon(emoji.native)
+    setEmojiPickerIsOpen(false)
+  
+    const updatedGoal: Goal = {
+      ...props.goal,
+      icon: emoji.native ?? props.goal.icon,
+      name: name ?? props.goal.name,
+      targetDate: targetDate ?? props.goal.targetDate,
+      targetAmount: targetAmount ?? props.goal.targetAmount,
+    }
+  
+    // TODO(update database)
+  }
 
   return (
     <GoalManagerContainer>
@@ -106,6 +145,18 @@ export function GoalManager(props: Props) {
           <StringValue>{new Date(props.goal.created).toLocaleDateString()}</StringValue>
         </Value>
       </Group>
+
+      <GoalIconContainer shouldShow={hasIcon()}>
+      <GoalIcon icon={goal.icon} onClick={addIconOnClick} />
+    </GoalIconContainer>
+      
+    <AddIconButtonContainer hasIcon={hasIcon()}>
+      <TransparentButton onClick={addIconOnClick}>
+        <FontAwesomeIcon icon={faSmile} size="2x" />
+        <AddIconButtonText>Add icon</AddIconButtonText>
+      </TransparentButton>
+    </AddIconButtonContainer>
+
     </GoalManagerContainer>
   )
 }
@@ -122,6 +173,20 @@ const Field = (props: FieldProps) => (
   </FieldContainer>
 )
 
+const GoalIconContainer = styled.div<GoalIconContainerProps>`
+  display: ${(props) => (props.shouldShow ? 'flex' : 'none')};
+`
+
+const AddIconButtonContainer = styled.div<GoalIconContainerProps>`
+  display: ${(props) => (props.shouldShow ? 'flex' : 'none')};
+`
+
+const EmojiPickerContainer = styled.div<EmojiPickerContainerProps>`
+  display: ${(props) => (props.isOpen ? 'flex' : 'none')};
+  position: absolute;
+  top: ${(props) => (props.hasIcon ? '10rem' : '2rem')};
+  left: 0;
+`
 const GoalManagerContainer = styled.div`
   display: flex;
   flex-direction: column;
